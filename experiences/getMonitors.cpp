@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "getMonitors.h"
+#include "header/getMonitors.h"
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
