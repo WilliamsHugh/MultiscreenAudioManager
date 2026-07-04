@@ -4,35 +4,52 @@
 
 using namespace std;
 
+int handleXError(Display* dpy, XErrorEvent* error) {
+    if (error->error_code == BadWindow) return 0;
+    return 0;
+}
+
 void getWindows() {
     Display* dpy = XOpenDisplay(NULL);
     if (!dpy) {
         cerr << "Failed to open display" << endl;
+        return;
     }
+
+    XSetErrorHandler(handleXError);
 
     Window root = DefaultRootWindow(dpy);
     Window parent;
-    Window *children;
+    Window *children = NULL;
     unsigned int nchildren;
 
     if (XQueryTree(dpy, root, &root, &parent, &children, &nchildren) == 0) {
         cerr << "Failed to query window tree" << endl;
         XCloseDisplay(dpy);
+        return;
     }
 
     cout << "Number of windows: " << nchildren << endl;
     for (unsigned int i = 0; i < nchildren; ++i) {
-        char* window_name = NULL;
+        XWindowAttributes attr;
 
-        XFetchName(dpy, children[i], &window_name);
-        if (window_name) {
-            cout << "Window ID: " << children[i] << ", Name: " << window_name << endl;
-            XFree(window_name);
-        } else {
-            cout << "Window ID: " << children[i] << ", Name: (none)" << endl;
+        if (XGetWindowAttributes(dpy, children[i], &attr)) {
+            if (attr.map_state == IsViewable) {
+                char* window_name = NULL;
+
+                XFetchName(dpy, children[i], &window_name);
+                if (window_name) {
+                    cout << "Window ID: " << children[i] << ", Name: " << window_name << endl;
+                    XFree(window_name);
+                }
+            }
         }
     }
 
-    XFree(children);
+    if (children) {
+        XFree(children);
+    }
+
+    XSetErrorHandler(NULL);
     XCloseDisplay(dpy);
 }
