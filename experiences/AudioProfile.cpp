@@ -36,7 +36,7 @@ AudioProfile getCurrentAudioProfile() {
         return hdmi;
     } else {
         std::cout << "No known audio profile found in output." << std::endl;
-        return AudioProfile{};
+        throw std::runtime_error("No known audio profile found.");
     }
 }
 
