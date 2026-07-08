@@ -41,6 +41,7 @@ void getWindows() {
                 XFetchName(dpy, children[i], &window_name);
                 if (window_name) {
                     cout << "Window ID: " << children[i] << ", Name: " << window_name << endl;
+                    cout << "Geometry: (" << attr.x << ", " << attr.y << "), Width: " << attr.width << ", Height: " << attr.height << endl;
                     XFree(window_name);
                 }
             }
