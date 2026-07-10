@@ -1,6 +1,6 @@
 {
   "uuid": "multiscreenaudiomanager@myapp.com",
   "name": "Multi-Screen Audio Manager",
-  "description": "Tự động quản lý nguồn âm thanh dựa trên vị trí màn hình của cửa sổ",
+  "description": "Auto manage audio settings for multiple monitors.",
   "shell-version": [ "45", "46", "47", "48" ]
 }

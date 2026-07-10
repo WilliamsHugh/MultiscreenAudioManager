@@ -1,21 +1,21 @@
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
-import WindowManager from './managers/WindowManager.js';
+import WindowManager from './window/WindowManager.js';
 
 export default class MultiScreenAudioManager extends Extension {
     enable() {
         // Initialize the WindowManager and start tracking signals
-        try {
-            this.WindowManager = new WindowManager(this.uuid, (window, monitorIndes) => {
-                // Handle the signal when a window is moved
-                console.log(`[${this.uuid}] Succesfully catch data from WindowManager`);
-                console.log(` -> Window: "${window.get_title()}" [App: ${window.get_wm_class()}]`);
-                console.log(` -> Has moved to monitor: ${monitorIndex}`);
-            });
+        this.WindowManager = new WindowManager(this.uuid, (window, monitorIndex) => {
+            console.log(`MILESTONE 1: Run test track window movement.`);
+            console.log(` -> Title: ${window.get_wm_class()} | PID: ${window.get_pid()} | has moved to Monitor: ${monitorIndex}`);
+        });
 
-            this.WindowManager.start();
-        } catch (error) {
-            console.error(`[${this.uuid}] has initialize failed: ${error.message}`);
-        }
+        // Listen window manager signals;
+        this.WindowManager.start();
+        
+        // Test feature 1: get list of window's PID
+        let currentSnapshot = this.WindowManager.getWindowListSnapshot();
+        console.log(`[MILESTONE 1 - First Snapshot]: Has ${currentSnapshot.length} windows`);
+        console.log(JSON.stringify(currentSnapshot, null, 2));
     }
 
     disable() {
