@@ -101,7 +101,6 @@ export default class WindowManager {
 
                 // Transmit the signal to RuleEngine for processing
                 if (this._onWindowMoved) {
-                    console.log(`It runs`)
                     this._onWindowMoved(win, currentMonitor);
                 }
             }
