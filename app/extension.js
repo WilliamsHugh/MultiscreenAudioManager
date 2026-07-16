@@ -2,34 +2,52 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import WindowManager from './window/WindowManager.js';
 
 export default class MultiScreenAudioManager extends Extension {
-    enable() {
-        console.log(`[${this.uuid}] Extension: Enabling MultiscreenAudioManager...`);
-        
-        // Initialize the WindowManager and start tracking signals
-        this.WindowManager = new WindowManager(this.uuid, (window, monitorIndex) => {
-            console.log(`MILESTONE 1: Run test track window movement.`);
-            console.log(` -> Title: ${window.get_wm_class()} | PID: ${window.get_pid()} | has moved to Monitor: ${monitorIndex}`);
-        });
-        
-        // Listen window manager signals
-        this.WindowManager.start();
-        
-        // Test feature 1: get list of window's PID
-        try {
-            let currentSnapshot = this.WindowManager.getWindowListSnapshot();
-            console.log(`[MILESTONE 1 - First Snapshot]: Has ${currentSnapshot.length} windows`);
+        enable() {
+            console.log(`[${this.uuid}] Extension: Enabling MultiscreenAudioManager...`);
             
-            // Format manually để tránh JSON.stringify() fail
-            for (let i = 0; i < currentSnapshot.length; i++) {
-                let w = currentSnapshot[i];
-                console.log(`  [${i}] ID: ${w.id}, PID: ${w.pid}, Monitor: ${w.monitor}, Title: "${w.title}"`);
+            // Initialize the WindowManager and start tracking signals
+            this.WindowManager = new WindowManager(this.uuid, (window, monitorIndex) => {
+                console.log(`MILESTONE 1: Run test track window movement.`);
+                console.log(` -> Title: ${window.get_wm_class()} | PID: ${window.get_pid()} | has moved to Monitor: ${monitorIndex}`);
+            });
+            
+            console.log(`[${this.uuid}] WindowManager created`);
+            
+            // Listen window manager signals
+            this.WindowManager.start();
+            
+            console.log(`[${this.uuid}] WindowManager.start() called`);
+            
+            // Test feature 1: get list of window's PID
+            try {
+                console.log(`[${this.uuid}] About to call getWindowListSnapshot()`);
+                
+                let currentSnapshot = this.WindowManager.getWindowListSnapshot();
+                
+                console.log(`[${this.uuid}] getWindowListSnapshot() returned successfully`);
+                console.log(`[${this.uuid}] currentSnapshot type: ${typeof currentSnapshot}`);
+                console.log(`[${this.uuid}] currentSnapshot is array: ${Array.isArray(currentSnapshot)}`);
+                console.log(`[${this.uuid}] currentSnapshot.length: ${currentSnapshot ? currentSnapshot.length : 'undefined'}`);
+                
+                console.log(`[MILESTONE 1 - First Snapshot]: Has ${currentSnapshot.length} windows`);
+                
+                // Format manually để tránh JSON.stringify() fail
+                if (currentSnapshot && currentSnapshot.length > 0) {
+                    for (let i = 0; i < currentSnapshot.length; i++) {
+                        let w = currentSnapshot[i];
+                        console.log(`  [${i}] ID: ${w.id}, PID: ${w.pid}, Monitor: ${w.monitor}, Title: "${w.title}"`);
+                    }
+                } else {
+                    console.log(`[${this.uuid}] No windows to display`);
+                }
+            } catch (error) {
+                console.error(`[${this.uuid}] ERROR in getWindowListSnapshot:`, error);
+                console.error(`[${this.uuid}] ERROR stack:`, error.stack);
             }
-        } catch (error) {
-            console.error(`[${this.uuid}] ERROR in getWindowListSnapshot:`, error);
+            
+            console.log(`[${this.uuid}] Extension: Enabled successfully`);
         }
-        
-        console.log(`[${this.uuid}] Extension: Enabled successfully`);
-    }
+
 
     disable() {
         // Stop tracking signals and clean up resources
