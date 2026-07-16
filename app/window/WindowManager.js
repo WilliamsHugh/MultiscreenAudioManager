@@ -97,7 +97,7 @@ export default class WindowManager {
             if (currentMonitor !== lastMonitor) {
                 lastMonitor = currentMonitor;
 
-                console.log(`[${this.uuid}] WindowManger: Window "${win.get_title()}" [PID: ${win.get_pid()}] has moved to Monitor: ${currentMonitor}`);
+                console.log(`[${this.uuid}] WindowManager: Window "${win.get_title()}" [PID: ${win.get_pid()}] has moved to Monitor: ${currentMonitor}`);
 
                 // Transmit the signal to RuleEngine for processing
                 if (this._onWindowMoved) {
