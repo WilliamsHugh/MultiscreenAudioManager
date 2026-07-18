@@ -6,9 +6,9 @@ export default class MultiScreenAudioManager extends Extension {
         console.log(`[${this.uuid}] Extension: Enabling MultiscreenAudioManager...`);
         
         // Initialize the WindowManager and start tracking signals
-        this.WindowManager = new WindowManager(this.uuid, (window, monitorIndex) => {
+        this.WindowManager = new WindowManager(this.uuid, (info) => {
             console.log(`MILESTONE 1: Run test track window movement.`);
-            console.log(` -> Title: ${window.get_wm_class()} | PID: ${window.get_pid()} | has moved to Monitor: ${monitorIndex}`);
+            console.log(` -> Title: ${info.wmClass} | PID: ${info.pid} | has moved to Monitor: ${info.monitor}`);
         });
         
         console.log(`[${this.uuid}] WindowManager created`);

@@ -1,5 +1,5 @@
-import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
+import WindowInfo from './WindowInfo.js';
 
 export default class WindowManager {
     constructor(uuid, onWindowMoved) {
@@ -16,7 +16,7 @@ export default class WindowManager {
         // Signal 1: Track when new windows are created (standard way)
         this._windowCreatedId = global.display.connect('window-created', (display, window) => {
             console.log(`[${this.uuid}] WindowManager: Caught 'window-created' signal for "${window.get_title()}"`);
-            this._trackedWindowSignals(window);
+            this._trackedWindow(window);
         });
 
         // Signal 2: Track when window gets focus
@@ -28,7 +28,7 @@ export default class WindowManager {
                 // Nếu window chưa được track, thêm vào
                 if (!this._trackedWindows.has(winId)) {
                     console.log(`[${this.uuid}] WindowManager: Caught focused window (not in tracking): "${focusedWindow.get_title()}"`);
-                    this._trackedWindowSignals(focusedWindow);
+                    this._trackedWindow(focusedWindow);
                 }
             }
         });
@@ -36,7 +36,7 @@ export default class WindowManager {
         // Get all current windows
         let currentWindows = this.getCurrentWindows();
         for (let win of currentWindows) {
-            this._trackedWindowSignals(win);
+            this._trackedWindow(win);
         }
 
         console.log(`[${this.uuid}] WindowManager: Initialize successful`);
@@ -80,78 +80,73 @@ export default class WindowManager {
         return true;
     }
 
+    /**
+     * Get a snapshot of all tracked windows
+     * 
+     * @returns {WindowInfo[]}
+     */
     getWindowListSnapshot() {
-        let windows = this.getCurrentWindows();
-        return windows.map(w => {
-            return {
-                id: w.get_id(),
-                pid: w.get_pid?.(),
-                monitor: w.get_monitor?.(),
-                title: w.get_title?.(),
-                wm_class: w.get_wm_class?.()
-            };
-        });
+        return this.getCurrentWindows()
+            .map(WindowInfo.fromMetaWindow);
     }
 
     /**
-     * Track a window's signals
+     * Start tracking a Meta.Window instance.
+     * 
+     * @param {Meta.Window} metaWindow
      */
-    _trackedWindowSignals(window) {
-        if (!window || !this._isValidWindow(window)) return;
+    _trackedWindow(metaWindow) {
+        if (!metaWindow || !this._isValidWindow(metaWindow)) return;
 
-        let winId = window.get_id();
+        const initialInfo = WindowInfo.fromMetaWindow(metaWindow);
 
         // Prevent duplicates
-        if (this._trackedWindows.has(winId)) return;
+        if (this._trackedWindows.has(initialInfo.id)) return;
 
         let signalIds = [];
-        let lastMonitor = window.get_monitor();
+        let lastMonitor = initialInfo.monitor;
 
         // [MOVEMENT SIGNAL]: Track when window moves to different monitor
-        let posId = window.connect('position-changed', (win) => {
-            if (!win || typeof win.get_monitor !== 'function') return;
+        let posId = metaWindow.connect('position-changed', (metaWindow) => {
+            const info = WindowInfo.fromMetaWindow(metaWindow);
 
-            let currentMonitor = win.get_monitor();
+            if (info.monitor === lastMonitor) return;
 
-            if (currentMonitor !== lastMonitor) {
-                lastMonitor = currentMonitor;
+            lastMonitor = info.monitor;
+            console.log(`[${this.uuid}] WindowManager: Window "${info.title}" [PID: ${info.pid}] moved to Monitor: ${info.monitor}`);
 
-                console.log(`[${this.uuid}] WindowManager: Window "${win.get_title()}" [PID: ${win.get_pid()}] moved to Monitor: ${currentMonitor}`);
-
-                if (this._onWindowMoved) {
-                    this._onWindowMoved(win, currentMonitor);
-                }
-            }
+            this._onWindowMoved?.(info);
         });
         signalIds.push(posId);
 
         // [CLOSE SIGNAL]: Track when window is closed
-        let unmanagedId = window.connect('unmanaged', (win) => {
-            this._untrackWindow(win);
+        let unmanagedId = metaWindow.connect('unmanaged', (metaWindow) => {
+            this._untrackWindow(metaWindow);
         });
         signalIds.push(unmanagedId);
 
-        this._trackedWindows.set(winId, {
-            window: window,
-            signalIds: signalIds
+        this._trackedWindows.set(initialInfo.id, {
+            metaWindow,
+            signalIds
         });
 
-        console.log(`[${this.uuid}] WindowManager: Now tracking window "${window.get_title()}" (ID: ${winId})`);
+        console.log(`[${this.uuid}] WindowManager: Now tracking window "${initialInfo.title}" (ID: ${initialInfo.id})`);
     }
 
     /**
      * Stop tracking a window
      */
-    _untrackWindow(window) {
-        let winId = window.get_id();
-        if (this._trackedWindows.has(winId)) {
-            let { signalIds } = this._trackedWindows.get(winId);
+    _untrackWindow(metaWindow) {
+        const winId = metaWindow.get_id();
 
-            for (let id of signalIds) {
-                window.disconnect(id);
+        if (this._trackedWindows.has(winId)) {
+            const { signalIds } = this._trackedWindows.get(winId);
+
+            for (const id of signalIds) {
+                metaWindow.disconnect(id);
             }
             this._trackedWindows.delete(winId);
-            console.log(`[${this.uuid}] WindowManager: Stopped tracking window "${window.get_title()}" (ID: ${winId})`);
+            console.log(`[${this.uuid}] WindowManager: Stopped tracking window "${metaWindow.get_title()}" (ID: ${winId})`);
         }
     }
 
@@ -171,9 +166,9 @@ export default class WindowManager {
         }
 
         // Untrack all windows
-        for (let [winId, { window, signalIds }] of this._trackedWindows.entries()) {
+        for (let [winId, { metaWindow, signalIds }] of this._trackedWindows.entries()) {
             for (let id of signalIds) {
-                window.disconnect(id);
+                metaWindow.disconnect(id);
             }
         }
 
