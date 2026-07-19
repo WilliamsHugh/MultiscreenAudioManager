@@ -14,9 +14,9 @@ export default class WindowManager {
         console.log(`[${this.uuid}] WindowManager: Initializing...`);
 
         // Signal 1: Track when new windows are created (standard way)
-        this._windowCreatedId = global.display.connect('window-created', (display, window) => {
-            console.log(`[${this.uuid}] WindowManager: Caught 'window-created' signal for "${window.get_title()}"`);
-            this._trackedWindow(window);
+        this._windowCreatedId = global.display.connect('window-created', (display, metaWindow) => {
+            console.log(`[${this.uuid}] WindowManager: Caught 'window-created' signal for "${metaWindow.get_title()}"`);
+            this._trackedWindow(metaWindow);
         });
 
         // Signal 2: Track when window gets focus
@@ -35,8 +35,8 @@ export default class WindowManager {
 
         // Get all current windows
         let currentWindows = this.getCurrentWindows();
-        for (let win of currentWindows) {
-            this._trackedWindow(win);
+        for (let metaWindow of currentWindows) {
+            this._trackedWindow(metaWindow);
         }
 
         console.log(`[${this.uuid}] WindowManager: Initialize successful`);
@@ -46,25 +46,25 @@ export default class WindowManager {
      * Get all windows (improved for Wayland)
      */
     getCurrentWindows() {
-        let windows = [];
+        let metaWindows = [];
 
         // Method 1: get_tab_list (main source)
         let tabListWindows = global.display.get_tab_list(0, null);
-        windows = tabListWindows.filter(w => this._isValidWindow(w));
+        metaWindows = tabListWindows.filter(w => this._isValidWindow(w));
 
         // Method 2: Fallback using get_window_actors (catch windows get_tab_list misses)
         let actors = global.get_window_actors();
         for (let actor of actors) {
-            let window = actor.get_meta_window?.();
-            if (window && this._isValidWindow(window)) {
+            let metaWindow = actor.get_meta_window?.();
+            if (metaWindow && this._isValidWindow(metaWindow)) {
                 // Avoid duplicates
-                if (!windows.some(w => w.get_id() === window.get_id())) {
-                    windows.push(window);
+                if (!metaWindows.some(w => w.get_id() === metaWindow.get_id())) {
+                    metaWindows.push(metaWindow);
                 }
             }
         }
 
-        return windows;
+        return metaWindows;
     }
 
     /**
